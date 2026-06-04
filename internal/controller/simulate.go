@@ -1,4 +1,4 @@
-package handler
+package controller
 
 import (
 	"fmt"
@@ -12,15 +12,15 @@ import (
 	"qris-payment/internal/service"
 )
 
-type SimulateHandler struct {
+type SimulateController struct {
 	svc *service.PaymentService
 }
 
-func NewSimulateHandler(svc *service.PaymentService) *SimulateHandler {
-	return &SimulateHandler{svc: svc}
+func NewSimulateController(svc *service.PaymentService) *SimulateController {
+	return &SimulateController{svc: svc}
 }
 
-func (h *SimulateHandler) CreateSimulate(c *fiber.Ctx) error {
+func (h *SimulateController) CreateSimulate(c *fiber.Ctx) error {
 	orderID := fmt.Sprintf("SIM-%s", uuid.New().String()[:12])
 
 	// Dynamically use request base URL so it works seamlessly on local networks
@@ -58,7 +58,7 @@ func (h *SimulateHandler) CreateSimulate(c *fiber.Ctx) error {
 	})
 }
 
-func (h *SimulateHandler) PaySimulate(c *fiber.Ctx) error {
+func (h *SimulateController) PaySimulate(c *fiber.Ctx) error {
 	orderID := c.Params("order_id")
 
 	payment, ok := h.svc.GetPayment(orderID)
@@ -112,7 +112,6 @@ func (h *SimulateHandler) PaySimulate(c *fiber.Ctx) error {
 		})
 	}
 
-	// Broadcast ke WebSocket subscriber
 	msg := model.WSMessage{
 		Type:    "payment_update",
 		OrderID: orderID,
@@ -167,7 +166,7 @@ func (h *SimulateHandler) PaySimulate(c *fiber.Ctx) error {
 	})
 }
 
-func (h *SimulateHandler) GetSimulateStatus(c *fiber.Ctx) error {
+func (h *SimulateController) GetSimulateStatus(c *fiber.Ctx) error {
 	orderID := c.Params("order_id")
 	payment, ok := h.svc.GetPayment(orderID)
 	if !ok {

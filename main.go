@@ -9,11 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/gofiber/template/html/v2"
 	fiberws "github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 
-	"qris-payment/internal/handler"
+	"qris-payment/internal/controller"
 	"qris-payment/internal/service"
 )
 
@@ -30,13 +29,9 @@ func main() {
 	log.Printf("[Store] ✅ JSON storage: %s", storagePath)
 
 	paymentSvc := service.NewPaymentService(store)
-	paymentHandler := handler.NewPaymentHandler(paymentSvc)
-
-	engine := html.New("./templates", ".html")
-	engine.Reload(true)
+	paymentController := controller.NewPaymentController(paymentSvc)
 
 	app := fiber.New(fiber.Config{
-		Views:   engine,
 		AppName: "QRIS Payment Testing",
 	})
 
@@ -53,21 +48,19 @@ func main() {
 		return fiber.ErrUpgradeRequired
 	})
 
-	app.Get("/ws/:order_id", fiberws.New(paymentHandler.WebSocket))
+	app.Get("/ws/:order_id", fiberws.New(paymentController.WebSocket))
 
-	simulateHandler := handler.NewSimulateHandler(paymentSvc)
+	simulateController := controller.NewSimulateController(paymentSvc)
 
 	api := app.Group("/api")
-	api.Post("/payment/create", paymentHandler.CreatePayment)
-	api.Get("/payment/:order_id", paymentHandler.GetStatus)
+	api.Post("/payment/create", paymentController.CreatePayment)
+	api.Get("/payment/:order_id", paymentController.GetStatus)
 
 	sim := api.Group("/simulate")
-	sim.Post("/create", simulateHandler.CreateSimulate)
-	sim.Post("/pay/:order_id", simulateHandler.PaySimulate)
-	sim.Get("/pay/:order_id", simulateHandler.PaySimulate)
-	sim.Get("/status/:order_id", simulateHandler.GetSimulateStatus)
-
-	app.Post("/webhook/midtrans", paymentHandler.Webhook)
+	sim.Post("/create", simulateController.CreateSimulate)
+	sim.Post("/pay/:order_id", simulateController.PaySimulate)
+	sim.Get("/pay/:order_id", simulateController.PaySimulate)
+	sim.Get("/status/:order_id", simulateController.GetSimulateStatus)
 
 	// Serve React frontend SPA at the root
 	app.Static("/", "./frontend/dist")
@@ -86,14 +79,13 @@ func main() {
 	port := getEnv("APP_PORT", "3002")
 	addr := fmt.Sprintf("%s:%s", host, port)
 
-	publicURL := getEnv("PUBLIC_URL", "http://"+addr)
 
 	log.Println("╔══════════════════════════════════════════════╗")
 	log.Println("║     QRIS Payment Testing — GoFiber           ║")
 	log.Println("╠══════════════════════════════════════════════╣")
 	log.Printf("║  Web    : http://%s\n", addr)
 	log.Printf("║  WS     : ws://%s/ws/:order_id\n", addr)
-	log.Printf("║  Webhook: %s/webhook/midtrans\n", publicURL)
+	log.Println("║  Simulasi: Hanya Test QR")
 	log.Println("╚══════════════════════════════════════════════╝")
 
 	if err := app.Listen(addr); err != nil {

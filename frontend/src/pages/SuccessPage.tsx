@@ -1,26 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Calendar, Receipt, User, Sparkles, ShieldCheck, Loader2, QrCode } from 'lucide-react';
+import { Check, Calendar, Receipt, User, Sparkles, ShieldCheck, QrCode } from 'lucide-react';
 
 export const SuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [countdown, setCountdown] = useState<number>(5);
 
   const orderId  = searchParams.get('order_id') || 'SIM-DUMMY-ORDER';
   const txnId    = searchParams.get('txn_id')   || 'TXN-DUMMY-1234';
   const amount   = parseInt(searchParams.get('amount') || '10000', 10);
-
-  // Auto-redirect countdown
-  useEffect(() => {
-    if (countdown <= 0) {
-      navigate('/');
-      return;
-    }
-    const timer = setTimeout(() => setCountdown((p) => p - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [countdown, navigate]);
 
   const formatRupiah = (num: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -143,16 +132,13 @@ export const SuccessPage: React.FC = () => {
                   <span className="receipt-value">QRIS (Simulasi)</span>
                 </div>
               </div>
-
-              {/* Auto Redirect */}
-              <div className="receipt-footer-auto">
-                <Loader2 className="spinner" size={13} style={{ color: 'var(--primary-color)' }} />
-                <span>
-                  Kembali ke menu utama dalam{' '}
-                  <strong style={{ color: 'var(--primary-color)' }}>{countdown}s</strong>
-                </span>
-              </div>
             </div>
+
+            {/* Test QR Lagi Button */}
+            <button className="btn-action" onClick={() => navigate('/')}>
+              <QrCode size={16} />
+              <span>Test QR Lagi</span>
+            </button>
           </div>
 
           {/* Footer */}
