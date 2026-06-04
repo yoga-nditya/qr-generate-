@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion } from 'framer-motion';
-import { QrCode, ShieldCheck, Clock, Loader2, Scan } from 'lucide-react';
+import { Clock, Loader2, Scan } from 'lucide-react';
 
 interface OrderData {
   order_id: string;
@@ -154,14 +154,6 @@ export const PaymentPage: React.FC = () => {
           transition={{ duration: 0.45, ease: 'easeOut' }}
           style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}
         >
-          {/* Brand Header */}
-          <div className="app-header">
-            <div className="app-logo-container">
-              <QrCode size={22} />
-            </div>
-            <h1 className="app-title">QRIS Merchant</h1>
-            <p className="app-subtitle">Pembayaran Otomatis &amp; Instan</p>
-          </div>
 
           {/* Payment Card */}
           <div className="payment-card">
@@ -218,11 +210,6 @@ export const PaymentPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="page-footer">
-            <ShieldCheck size={12} />
-            <span>Sistem simulasi otomatis (tanpa Midtrans)</span>
-          </div>
         </motion.div>
       </div>
     </div>

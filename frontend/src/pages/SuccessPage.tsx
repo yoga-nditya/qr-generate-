@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Calendar, Receipt, User, Sparkles, ShieldCheck, QrCode } from 'lucide-react';
+import { Check, Calendar, Receipt, User, Sparkles, QrCode } from 'lucide-react';
 
 export const SuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -33,14 +33,6 @@ export const SuccessPage: React.FC = () => {
           transition={{ duration: 0.45, ease: 'easeOut' }}
           style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}
         >
-          {/* Brand Header */}
-          <div className="app-header">
-            <div className="app-logo-container">
-              <QrCode size={22} />
-            </div>
-            <h1 className="app-title">QRIS Merchant</h1>
-            <p className="app-subtitle">Bukti Pembayaran</p>
-          </div>
 
           {/* Success Card */}
           <div className="payment-card">
@@ -141,11 +133,6 @@ export const SuccessPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Footer */}
-          <div className="page-footer">
-            <ShieldCheck size={12} />
-            <span>Sistem simulasi otomatis (tanpa Midtrans)</span>
-          </div>
         </motion.div>
       </div>
     </div>

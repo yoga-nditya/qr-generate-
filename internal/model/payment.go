@@ -30,7 +30,6 @@ type CreatePaymentResponse struct {
 	Status     string `json:"status"`
 }
 
-
 type WSMessage struct {
 	Type    string      `json:"type"`
 	OrderID string      `json:"order_id"`

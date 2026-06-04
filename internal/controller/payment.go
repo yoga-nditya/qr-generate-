@@ -52,7 +52,7 @@ func (h *PaymentController) GetStatus(c *fiber.Ctx) error {
 
 func (h *PaymentController) WebSocket(c *websocket.Conn) {
 	orderID := c.Params("order_id")
-	log.Printf("[WS] 🔌 New connection: order=%s", orderID)
+	log.Printf("[WS] New connection: order=%s", orderID)
 
 	service.GlobalHub.Register(orderID, c)
 	defer func() {
@@ -74,7 +74,7 @@ func (h *PaymentController) WebSocket(c *websocket.Conn) {
 	for {
 		_, _, err := c.ReadMessage()
 		if err != nil {
-			log.Printf("[WS] 🔌 Disconnected: order=%s", orderID)
+			log.Printf("[WS] Disconnected: order=%s", orderID)
 			break
 		}
 	}
