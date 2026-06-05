@@ -13,17 +13,18 @@ import (
 
 type PaymentController struct {
 	svc *service.PaymentService
+	hub *service.Hub
 }
 
-func NewPaymentController(svc *service.PaymentService) *PaymentController {
-	return &PaymentController{svc: svc}
+func NewPaymentController(svc *service.PaymentService, hub *service.Hub) *PaymentController {
+	return &PaymentController{svc: svc, hub: hub}
 }
 
 func (h *PaymentController) CreatePayment(c *fiber.Ctx) error {
 	resp, err := h.svc.CreateQRISPayment(10000)
 	if err != nil {
-		log.Printf("[Controller] CreatePayment error: %v", err)
-		return c.Status(500).JSON(fiber.Map{
+		log.Printf("[PaymentController] CreatePayment error: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
 			"message": err.Error(),
 		})
@@ -39,11 +40,12 @@ func (h *PaymentController) GetStatus(c *fiber.Ctx) error {
 	orderID := c.Params("order_id")
 	payment, ok := h.svc.GetPayment(orderID)
 	if !ok {
-		return c.Status(404).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Order tidak ditemukan",
 		})
 	}
+
 	return c.JSON(fiber.Map{
 		"success": true,
 		"data":    payment,
@@ -54,9 +56,9 @@ func (h *PaymentController) WebSocket(c *websocket.Conn) {
 	orderID := c.Params("order_id")
 	log.Printf("[WS] New connection: order=%s", orderID)
 
-	service.GlobalHub.Register(orderID, c)
+	h.hub.Register(orderID, c)
 	defer func() {
-		service.GlobalHub.Unregister(orderID, c)
+		h.hub.Unregister(orderID, c)
 		c.Close()
 	}()
 
@@ -72,8 +74,7 @@ func (h *PaymentController) WebSocket(c *websocket.Conn) {
 	}
 
 	for {
-		_, _, err := c.ReadMessage()
-		if err != nil {
+		if _, _, err := c.ReadMessage(); err != nil {
 			log.Printf("[WS] Disconnected: order=%s", orderID)
 			break
 		}

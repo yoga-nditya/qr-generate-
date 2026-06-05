@@ -18,18 +18,20 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("[ENV] No .env file, using OS environment")
+		log.Println("[ENV] No .env file found, using OS environment")
 	}
 
 	storagePath := getEnv("STORAGE_FILE", "./data/payments.json")
 	store, err := service.NewStore(storagePath)
 	if err != nil {
-		log.Fatalf("[Store] Init failed: %v", err)
+		log.Fatalf("[Store] Failed to initialize: %v", err)
 	}
-	log.Printf("[Store] ✅ JSON storage: %s", storagePath)
+	log.Printf("[Store] JSON storage loaded: %s", storagePath)
 
-	paymentSvc := service.NewPaymentService(store)
-	paymentController := controller.NewPaymentController(paymentSvc)
+	hub := service.NewHub()
+	paymentService := service.NewPaymentService(store)
+	paymentController := controller.NewPaymentController(paymentService, hub)
+	simulateController := controller.NewSimulateController(paymentService, hub)
 
 	app := fiber.New(fiber.Config{
 		AppName: "QRIS Payment Testing",
@@ -41,33 +43,20 @@ func main() {
 	}))
 	app.Use(cors.New())
 
-	app.Use("/ws", func(c *fiber.Ctx) error {
-		if fiberws.IsWebSocketUpgrade(c) {
-			return c.Next()
-		}
-		return fiber.ErrUpgradeRequired
-	})
+	registerRoutes(app, paymentController, simulateController)
 
-	app.Get("/ws/:order_id", fiberws.New(paymentController.WebSocket))
+	host := getEnv("APP_HOST", "0.0.0.0")
+	port := getEnv("APP_PORT", "3002")
+	addr := fmt.Sprintf("%s:%s", host, port)
 
-	simulateController := controller.NewSimulateController(paymentSvc)
+	printBanner(addr)
 
-	api := app.Group("/api")
-	api.Post("/payment/create", paymentController.CreatePayment)
-	api.Get("/payment/:order_id", paymentController.GetStatus)
+	if err := app.Listen(addr); err != nil {
+		log.Fatalf("[APP] Server failed to start: %v", err)
+	}
+}
 
-	sim := api.Group("/simulate")
-	sim.Post("/create", simulateController.CreateSimulate)
-	sim.Post("/pay/:order_id", simulateController.PaySimulate)
-	sim.Get("/pay/:order_id", simulateController.PaySimulate)
-	sim.Get("/status/:order_id", simulateController.GetSimulateStatus)
-
-	// Serve React frontend SPA at the root
-	app.Static("/", "./frontend/dist")
-	app.Get("/*", func(c *fiber.Ctx) error {
-		return c.SendFile("./frontend/dist/index.html")
-	})
-
+func registerRoutes(app *fiber.App, paymentController *controller.PaymentController, simulateController *controller.SimulateController) {
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":  "ok",
@@ -75,22 +64,38 @@ func main() {
 		})
 	})
 
-	host := getEnv("APP_HOST", "0.0.0.0")
-	port := getEnv("APP_PORT", "3002")
-	addr := fmt.Sprintf("%s:%s", host, port)
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if fiberws.IsWebSocketUpgrade(c) {
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+	app.Get("/ws/:order_id", fiberws.New(paymentController.WebSocket))
 
+	api := app.Group("/api")
+	api.Post("/payment/create", paymentController.CreatePayment)
+	api.Get("/payment/:order_id", paymentController.GetStatus)
 
-	log.Println("╔══════════════════════════════════════════════╗")
-	log.Println("║     QRIS Payment Testing — GoFiber           ║")
-	log.Println("╠══════════════════════════════════════════════╣")
-	log.Printf("║  Web    : http://%s\n", addr)
-	log.Printf("║  WS     : ws://%s/ws/:order_id\n", addr)
-	log.Println("║  Simulasi: Hanya Test QR")
-	log.Println("╚══════════════════════════════════════════════╝")
+	transaction := api.Group("/transaction")
+	transaction.Post("/create", simulateController.CreateSimulate)
+	transaction.Post("/pay/:order_id", simulateController.PaySimulate)
+	transaction.Get("/pay/:order_id", simulateController.PaySimulate)
+	transaction.Get("/status/:order_id", simulateController.GetSimulateStatus)
 
-	if err := app.Listen(addr); err != nil {
-		log.Fatalf("[APP] Server error: %v", err)
-	}
+	app.Static("/", "./frontend/dist")
+	app.Get("/*", func(c *fiber.Ctx) error {
+		return c.SendFile("./frontend/dist/index.html")
+	})
+}
+
+func printBanner(addr string) {
+	log.Println("================================================")
+	log.Println("  QRIS Payment Testing - GoFiber")
+	log.Println("================================================")
+	log.Printf("  Web : http://%s", addr)
+	log.Printf("  WS  : ws://%s/ws/:order_id", addr)
+	log.Println("  Mode: Simulation Only")
+	log.Println("================================================")
 }
 
 func getEnv(key, fallback string) string {
