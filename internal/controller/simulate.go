@@ -104,8 +104,6 @@ func (h *SimulateController) CreateSimulate(c *fiber.Ctx) error {
 	})
 }
 
-// PaySimulate handles GET and POST /api/simulate/pay/:order_id.
-// GET returns an HTML confirmation page; POST returns JSON.
 func (h *SimulateController) PaySimulate(c *fiber.Ctx) error {
 	orderID := c.Params("order_id")
 
@@ -169,7 +167,6 @@ func (h *SimulateController) PaySimulate(c *fiber.Ctx) error {
 	})
 }
 
-// GetSimulateStatus handles GET /api/simulate/status/:order_id.
 func (h *SimulateController) GetSimulateStatus(c *fiber.Ctx) error {
 	orderID := c.Params("order_id")
 	payment, ok := h.svc.GetPayment(orderID)
